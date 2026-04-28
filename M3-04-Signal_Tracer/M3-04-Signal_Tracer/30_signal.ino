@@ -3,22 +3,12 @@
  */
 
 // enumerasi bentuk sinyal
-enum {ST_NOISE, ST_SINUS, ST_RECTANGLE, ST_TRIANGLE, ST_SAWTOOTH, ST_MAX};
-
-// string nama sinyal
-char* signal_strs[] = {
-  "NSE",
-  "SIN",
-  "REC",
-  "TRI",
-  "SAW"
-};
+enum {ST_SINUS, ST_RECTANGLE, ST_TRIANGLE, ST_SAWTOOTH, ST_MAX};
 
 // rentang signal (dalam mv)
 int signal_min = 500;
 int signal_max = 2500;
 int signal_span = signal_max - signal_min;
-int signal_type = ST_SINUS;
 
 void setRange(int min, int max) {
   signal_min = min;
@@ -28,9 +18,10 @@ void setRange(int min, int max) {
 
 // fungsi menghasilkan sinyal sinus
 // amplitudo signal_min - signal_max
+
 int fSin(unsigned long t, unsigned long periode) {
-  float s = sin(2*M_PI*t/periode);
-  return (int)((s + 1)/2*signal_span)+signal_min;
+  float s = sin(2.0 * PI * t / periode);
+  return (int)((s + 1.0) / 2.0 * signal_span) + signal_min;
 }
 
 // fungsi menghasilkan sinyal kotak
@@ -76,8 +67,8 @@ int fNoise() {
 }
 
 // fungsi menghasilkan sinyal dengan type tertentu
-int fSignal(unsigned long t, unsigned long periode) {
-  switch(signal_type) {
+int fSignal(int stype, unsigned long t, unsigned long periode) {
+  switch(stype) {
     case ST_SINUS: return fSin(t, periode); 
     case ST_RECTANGLE: return fRectangle(t, periode);
     case ST_TRIANGLE: return fTriangle(t, periode);

@@ -1,9 +1,9 @@
 /*
  * Konstanta dan fungsi dasar escope
+ * HARUS pakai tabel kalibrasi masing-masing !
  */
 
-// Pin Standar kit ESCOPE 2020 ESP32
-// Sudah terinclude dari library TFScope22
+
 
 #define DA_MAX 255
 #define AD_MAX 4095
@@ -273,7 +273,6 @@ int tabel[N_ROW][N_COL] = {
 {4083, 3120,  255},
 };
 
-
 // Fungsi konversi
 int mvToDa(int mv) {
   // konversi linier
@@ -287,19 +286,13 @@ int mvToDa(int mv) {
   return constrain(da,0,DA_MAX);
 }
 
-// cari row yang isi AD nya sudah > ad
-// return index antara 1 - (N_ROW-1)
-int findIdx(int ad) {
-  int i;
-  for (i=1; i<N_ROW-1; i++) {
-    if (tabel[i][I_AD] >= ad) break;    
-  }
-  return i;
-}
-
 // Fungsi konversi
 int adToMv(int ad) {
-  int idx = findIdx(ad);
+  // cari segmen
+  int idx;
+  for (idx=1; idx<N_ROW-1; idx++) {
+    if (tabel[idx][I_AD] >= ad) break;    
+  }
 
   // konversi look-up table
   // interpolasi linier
@@ -318,7 +311,7 @@ void dacWriteMv(int pin, int mv) {
   dacWrite(pin, mvToDa(mv));
 }
 
-// DigitalToAnalog
+// AnalogToDigital
 int analogReadMv(int pin) {
   return adToMv(analogRead(pin));
 }
@@ -352,16 +345,15 @@ void oledPrint(int x, int y, char *str) {
 }
 
 void oledBlink(int x, int y, char *str) {
-  static bool dblink=true;
+  static bool dblink = true;
   if (dblink) {
-    oled.setCursor(x,y);
+    oled.setCursor(x, y);
     oled.print(str);
-  }
-  else {
+  } else {
     oled.clearDisplay();    
   }
   oled.display();
-  dblink = !dblink;
+  dblink = !dblink; // PERBAIKAN: Gunakan operator assignment (=) dan NOT (!)
   delay(500);
 }
 
@@ -385,13 +377,4 @@ void escopeSetup() {
   if (!ina219.begin()) {
     while (1) { delay(100); }
   }   
-
-  // siapkan button
-  pinMode(BT0, INPUT_PULLUP);
-  pinMode(BT1, INPUT_PULLUP);
-  pinMode(BT2, INPUT_PULLUP);
-
-  // siapkan LED
-  pinMode(LED0, OUTPUT);
-  digitalWrite(LED0, LOW);
 }

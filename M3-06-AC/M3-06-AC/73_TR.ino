@@ -15,7 +15,7 @@ void generateSignal() {
 void traceSignal() {
   int item_mv[N_SIGNAL+1];
   item_mv[0]=da_mv;  // sinyal output 
-  for(int i=0; i<N_SIGNAL; i++) {
+  for(int i=0; i<N_AD; i++) {
      int ad = analogRead(p_ad[i]);
      item_mv[1+i] = adToMv(ad);
   }

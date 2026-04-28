@@ -1,57 +1,47 @@
-/*
- * Pengukuran AC (Analisis Spektrum)
- */
-
-#include <arduinoFFT.h> // Pastikan pustaka ini terinstal
-
-// Persiapan data FFT
-double vReal[N_DATA];
-double vImag[N_DATA];
-ArduinoFFT<double> FFT = ArduinoFFT<double>(vReal, vImag, N_DATA, (double)(1000000.0 / ts_signal));
-
 void acPrintHeader() {
-  char buff[60];
-  sprintf(buff, "Freq(Hz) Magnitudo %s Periode=%d", 
-    signal_strs[signal_type], periode_signal);
-  Serial.println(buff);
+  Serial.println("F(Hz) Periode(ms) Gain(%)");
 }
 
-void acPrintSpektrum() {
-  // Menampilkan hasil FFT ke Serial
-  for (int i = 0; i < (N_DATA / 2); i++) {
-    double freq = (i * 1.0 * (1000000.0 / ts_signal)) / N_DATA;
-    Serial.print(freq, 2);
-    Serial.print(" ");
-    Serial.println(vReal[i], 2);
-  }
-}
+void acMeasure(unsigned prd) {
+  periode_signal = prd;
+  signal_type = ST_SINUS;
 
-// fungsi pengukuran AC
-void acMeasure() {
-  // Re-use logic dari trMeasure untuk mengambil data transien terlebih dahulu
-  trMeasure(); 
+  trMeasure();
 
   int item_mv[N_SIGNAL + 1];
-  int count = 0;
+  int v0_min = 5000;
+  int v0_max = -5000;
+  int v1_min = 5000;
+  int v1_max = -5000;
 
-  // Pindahkan data dari buffer ke array FFT (mengambil Channel V0/item_mv[1])
-  while (!lbuffer.isEmpty() && count < N_DATA) {
+  while (!lbuffer.isEmpty()) {
     lbuffer.take(item_mv);
-    vReal[count] = (double)item_mv[1]; // Mengambil data ADC pertama
-    vImag[count] = 0.0;
-    count++;
+    int v0 = item_mv[1];
+    int v1 = item_mv[2];
+
+    if (v0 > v0_max) v0_max = v0;
+    if (v0 < v0_min) v0_min = v0;
+    if (v1 > v1_max) v1_max = v1;
+    if (v1 < v1_min) v1_min = v1;
   }
 
-  // Proses FFT
-  FFT.windowing(FFT_WIN_TYP_HAMMING, FFT_FORWARD);
-  FFT.compute(FFT_FORWARD);
-  FFT.complexToMagnitude();
+  int v0_pp = v0_max - v0_min;
+  int v1_pp = v1_max - v1_min;
+  float freq = 1000.0 / prd;
+  int gain_pct = (v0_pp > 0) ? (v1_pp * 100 / v0_pp) : 0;
+
+  Serial.print(freq, 2);
+  Serial.print(" ");
+  Serial.print(prd);
+  Serial.print(" ");
+  Serial.println(gain_pct);
 }
 
-// fungsi aksi utama untuk perintah AC
 void acAction() {
-  Serial.println("--- AC Spectrum Analysis ---");
-  acMeasure();
   acPrintHeader();
-  acPrintSpektrum();
+  int periods[] = {10000, 5000, 2000, 1000, 500, 200, 100, 50};
+  int n_periods = 8;
+  for (int i = 0; i < n_periods; i++) {
+    acMeasure(periods[i]);
+  }
 }
